@@ -1,0 +1,26 @@
+name: pump-lead-sweep
+
+on:
+  schedule:
+    # Every 2 hours. A sweep costs ~3 minutes, so 12 runs a day = ~36 min/day,
+    # ~1,100 min/month — inside the 2,000 free minutes even on a private repo.
+    # If the repo is public, Actions minutes are unlimited, so hourly is fine too.
+    - cron: "0 */2 * * *"
+  workflow_dispatch: # run it by hand any time from the Actions tab
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "websockets>=14" requests
+      - run: python track.py --seconds 90 --max 20
+      - name: Beep on Telegram when there are leads
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python send_telegram.py
+        
